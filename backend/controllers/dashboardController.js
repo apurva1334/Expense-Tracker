@@ -50,9 +50,54 @@ exports.getDashboardData = async(req,res)=>
 
         //get total Expense for last 30 days
 
-        const expensesLast60Days = last30DaysExpenseTransactions.reduce(
+        const expensesLast30Days = last30DaysExpenseTransactions.reduce(
             (sum,transaction)=>sum + transaction.amount,
             0
         );
+        
+        // fetch last 5 transactions (income and expenses)
+
+        const lastTransactions =[
+
+            ...(await Income.find({userId}).sort({date:-1}).limit(5)).map(
+                (txn) => ({
+                    ...txn.toObject(),
+                    type:"income",
+
+                })
+            ),
+            ...(await Expense.find({userId}).sort({date:-1}).limit(5)).map(
+                (txn) => ({
+                    ...txn.toObject(),
+                    type:"expense",
+
+                })
+            ),
+        ].sort((a,b) => b.date - a.date); // sort latest first 
+
+        // final  response
+        res.json({
+            totalBalance:
+            (totalIncome[0]?.total || 0)-(totalExpense[0]?.total || 0),
+            totalIncome: totalIncome[0]?.total || 0,
+            totalExpenses:totalExpense[0]?.total || 0,
+            
+            last30DaysExpenses:
+            {
+                total: expensesLast30Days,
+                transactions: last30DaysExpenseTransactions,
+            },
+            last60daysIncome:
+            {
+                total:incomeLast60Days,
+                transcations: last60DaysIncomeTransactions,
+            },
+            recentTransactions: lastTransactions,
+        });
+
+    }catch(error)
+    {
+        res.status(500).json({message:"Server Error",error});
+
     }
 };
