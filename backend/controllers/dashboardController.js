@@ -13,14 +13,14 @@ exports.getDashboardData = async(req,res)=>
 
         const totalIncome = await Income.aggregate([
             {$match: { userId: userObjectId}},
-            {$group:{_id:null,total:{sum:"$amount"}}},
+            {$group:{_id:null,total:{$sum:"$amount"}}},
 
         ]);
         console.log("totalIncome",{totalIncome,userId: isValidObjectId(userId)});
 
         const totalExpense = await Expense.aggregate([
             {$match:{userId:userObjectId}},
-            {$group:{_id:null,total:{sum:"$amount"}}},
+            {$group:{_id:null,total:{$sum:"$amount"}}},
 
         ]);
         
@@ -28,7 +28,7 @@ exports.getDashboardData = async(req,res)=>
         // get income transaction in last 60 days 
 
         const last60DaysIncomeTransactions = await Income.find({
-            userId,
+            userId: userObjectId,
             date:{$gte:new Date(Date.now()-60*24*60*60*1000)}, 
         }).sort({date:-1});
 
@@ -44,7 +44,7 @@ exports.getDashboardData = async(req,res)=>
 
          
         const last30DaysExpenseTransactions = await Expense.find({
-            userId,
+            userId: userObjectId,
             date:{$gte:new Date(Date.now()-30*24*60*60*1000)}, 
         }).sort({date:-1});
 
@@ -59,14 +59,14 @@ exports.getDashboardData = async(req,res)=>
 
         const lastTransactions =[
 
-            ...(await Income.find({userId}).sort({date:-1}).limit(5)).map(
+            ...(await Income.find({userId: userObjectId}).sort({date:-1}).limit(5)).map(
                 (txn) => ({
                     ...txn.toObject(),
                     type:"income",
 
                 })
             ),
-            ...(await Expense.find({userId}).sort({date:-1}).limit(5)).map(
+            ...(await Expense.find({userId: userObjectId}).sort({date:-1}).limit(5)).map(
                 (txn) => ({
                     ...txn.toObject(),
                     type:"expense",
@@ -90,7 +90,7 @@ exports.getDashboardData = async(req,res)=>
             last60daysIncome:
             {
                 total:incomeLast60Days,
-                transcations: last60DaysIncomeTransactions,
+                transactions: last60DaysIncomeTransactions,
             },
             recentTransactions: lastTransactions,
         });
