@@ -1,11 +1,14 @@
 /* eslint-disable no-unused-vars */
-import React ,{ useState }  from 'react'
+import React ,{ useContext, useState }  from 'react'
 import AuthLayout from '../../components/layouts/AuthLayout'
 import { Link, useNavigate } from 'react-router-dom';
 import Input from '../../components/inputs/Input';
 import { validateEmail } from '../../utils/helper';
 import ProfilePhotoSelector from '../../components/inputs/ProfilePhotoSelector';
-
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
+import { UserContext } from '../../context/UserContext';
+import uploadImage from '../../utils/uploadImage';
 const SignUp = () => {
   const [profilePic,setProfilePic] = useState(null);
   const [fullName ,setFullName] = useState("");
@@ -16,6 +19,8 @@ const SignUp = () => {
 
   const navigate =useNavigate();
 
+  //  signupapi!
+const {updateUser} =useContext(UserContext);
 
   // handle sing up form submit 
 
@@ -41,7 +46,46 @@ const SignUp = () => {
     }
     setError("");
 
+
     //sign up api call
+
+
+
+
+try{
+
+  //upload image if present
+  if(profilePic)
+  {
+    const imgUploadRes = await uploadImage(profilePic);
+    profileImageUrl= imgUploadRes.imageUrl || "";
+  }
+
+
+  const response = await axiosInstance.post(API_PATHS.AUTH.REGISTER,{
+    fullName,
+    email,
+    password,
+    profileImageUrl,
+  });
+  const {token, user} = response.data;
+
+  if(token){
+    localStorage.setItem("token",token);
+    updateUser(user);
+    navigate("/dashboard");
+  }
+}catch(error)
+{
+  if(error.response && error.response.data.message)
+  {
+    setError(error.response.data.message);
+  }else{
+    setError("Something went wrong, Please try again ")
+  }
+}
+
+
 
   }; 
   return (
@@ -52,7 +96,7 @@ const SignUp = () => {
           Join us today by entering your details below.
         </p>
 
-        <form on Submit = {handleSignUp}>
+        <form onSubmit = {handleSignUp}>
 
           <ProfilePhotoSelector image= {profilePic} setImage={setProfilePic}/>
 
